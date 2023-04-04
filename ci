@@ -1,0 +1,54 @@
+#!/bin/sh
+set -e
+
+projectroot="$(git rev-parse --show-toplevel)"
+folder_terraform=$projectroot/terraform/azure
+
+lint_terraform() {
+  ENV=$1
+  particular_folder=$folder_terraform/$ENV
+  echo "terraform format check ${particular_folder}"
+  result=$(terraform fmt -check -recursive "${particular_folder}" | wc -l)
+
+  if ! command -v terraform &>/dev/null; then
+      echo "# ERROR: terraform not found." >&2
+      exit 1
+  fi
+
+  if (( result > 0 )); then
+    echo "# ERROR: failed, below files not formatted"
+    terraform fmt -check -recursive "${particular_folder}"
+    exit 1
+  else
+    echo "pass"
+  fi
+}
+
+install_tfswitch() {
+  echo "Installing tfswitch locally"
+
+  #Get the installer on to your machine
+#  wget https://raw.githubusercontent.com/warrensbox/terraform-switcher/release/install.sh
+
+  #Make installer executable
+# chmod 755 install.sh
+
+  #Install tfswitch in a location you have permission
+  ./install.sh -b $(pwd)/.bin
+
+  # set custom bin path
+  CUSTOMBIN=$(pwd)/.bin
+
+  #Add custom bin path to PATH environment
+  export PATH=$CUSTOMBIN:$PATH
+
+  $CUSTOMBIN/tfswitch -b $CUSTOMBIN/terraform
+}
+
+case $1 in
+ install_tfswitch|lint_terraform )
+   $1 $2;;
+ * )
+  echo "not support!!! example: go <lint_terraform>"
+  exit 1;;
+esac
